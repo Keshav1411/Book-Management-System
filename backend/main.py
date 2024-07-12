@@ -1,7 +1,7 @@
-from fastapi import FastAPI, HTTPException, File, UploadFile, Form
+from fastapi import FastAPI, HTTPException, File, UploadFile, Form, Query
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel #define the shape and structure of request and response data,
-from sqlalchemy import create_engine, Column, Integer, String
+from sqlalchemy import create_engine, Column, Integer, String, text
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 import os
@@ -67,8 +67,26 @@ def read_books():
     db = SessionLocal()
     books = db.query(Book).all()
     db.close()
+    #print("1")
+    #print(books)
+    #print("1")
     return books
- 
+
+@app.get("/search-books/")
+async def search_books(query: str = Query(...)):
+    db = SessionLocal()
+    books = db.execute(text("SELECT * FROM books WHERE title ILIKE :query"), {"query": f"%{query}%"}).fetchall()
+    db.close()
+    # Convert ResultProxy to list of dictionaries
+    books_list = [{"id": book.id, "title": book.title, "author": book.author, "year_published": book.year_published,
+                   "pdf": book.pdf, "category": book.category} for book in books]
+    return books_list
+# Convert ResultProxy to list of dictionaries
+
+    
+    
+   
+
 @app.put("/update-books/{book_id}", response_model=BookCreate)
 def update_book(
     book_id: int,
